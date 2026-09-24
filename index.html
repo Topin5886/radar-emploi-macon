@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Radar Emploi Mâcon</title>
+<meta name="description" content="Suivi quotidien des offres vente/commerce accessibles sans voiture autour de Mâcon, avec prompt Claude Design prêt à copier pour chaque offre.">
+<meta name="theme-color" content="#f3f1ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15140f" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f3f1ea;
+    --surface:#ffffff;
+    --surface-2:#ece8dc;
+    --ink:#1c1a16;
+    --ink-muted:#6b6558;
+    --border:#ddd7c8;
+    --accent:#a9740f;
+    --accent-ink:#4a3300;
+    --accent-soft:#f3e3bd;
+    --teal:#2c5f5c;
+    --teal-soft:#dcebe9;
+    --new:#b84a2f;
+    --new-soft:#f7ddd3;
+    --warn:#9a6b12;
+    --warn-soft:#f4e6c4;
+    --shadow: 0 1px 2px rgba(28,26,22,.06), 0 8px 24px -12px rgba(28,26,22,.18);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15140f;
+      --surface:#1f1d17;
+      --surface-2:#262319;
+      --ink:#efe9db;
+      --ink-muted:#a89e88;
+      --border:#38341f;
+      --accent:#e0ab41;
+      --accent-ink:#fff2d1;
+      --accent-soft:#463108;
+      --teal:#7cc9c1;
+      --teal-soft:#1c332f;
+      --new:#ff9376;
+      --new-soft:#3a1f16;
+      --warn:#f0c15f;
+      --warn-soft:#3a2c0a;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15140f;
+    --surface:#1f1d17;
+    --surface-2:#262319;
+    --ink:#efe9db;
+    --ink-muted:#a89e88;
+    --border:#38341f;
+    --accent:#e0ab41;
+    --accent-ink:#fff2d1;
+    --accent-soft:#463108;
+    --teal:#7cc9c1;
+    --teal-soft:#1c332f;
+    --new:#ff9376;
+    --new-soft:#3a1f16;
+    --warn:#f0c15f;
+    --warn-soft:#3a2c0a;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Work Sans", "Segoe UI", system-ui, sans-serif;
+    padding-inline:16px;
+    padding-block:24px 56px;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+  h1,h2{font-family:"Fraunces","Georgia",serif; text-wrap:balance;}
+  header.top{
+    display:flex; flex-direction:column; gap:6px; margin-bottom:22px;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.72rem; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--accent-ink); background:var(--accent-soft);
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:999px; width:fit-content;
+  }
+  h1{font-size:clamp(1.6rem,5vw,2.1rem); margin:4px 0 2px; font-weight:600;}
+  .sub{color:var(--ink-muted); font-size:.95rem; max-width:60ch; line-height:1.5;}
+
+  .stats{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    margin:18px 0 24px;
+  }
+  .stat{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:12px 14px; box-shadow:var(--shadow);
+  }
+  .stat .n{
+    font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat .l{font-size:.72rem; color:var(--ink-muted); letter-spacing:.03em;}
+
+  .updated{
+    font-size:.82rem; color:var(--ink-muted); margin-bottom:6px;
+    font-family:"IBM Plex Mono",monospace;
+  }
+
+  .filters{
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .filters button{
+    font-family:"Work Sans",sans-serif; font-size:.82rem; font-weight:600;
+    padding:7px 13px; border-radius:999px; border:1px solid var(--border);
+    background:var(--surface); color:var(--ink-muted); cursor:pointer;
+  }
+  .filters button.active{
+    background:var(--ink); color:var(--bg); border-color:var(--ink);
+  }
+  :root[data-theme="dark"] .filters button.active,
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .filters button.active{ background:var(--accent); color:#1c1a16; border-color:var(--accent);} }
+
+  .list{display:flex; flex-direction:column; gap:14px;}
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px 18px; box-shadow:var(--shadow); position:relative;
+  }
+  .card.is-new{ border-color:var(--new); }
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px;}
+  .entreprise{font-weight:700; font-size:1.05rem;}
+  .poste{color:var(--ink-muted); font-size:.92rem; margin-top:1px;}
+  .card-top-right{display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0;}
+  .pub-date{
+    font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--ink-muted); white-space:nowrap;
+  }
+  .new-badge{
+    font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.06em; text-transform:uppercase;
+    background:var(--new-soft); color:var(--new); padding:3px 8px; border-radius:6px; white-space:nowrap;
+  }
+  .badges{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;}
+  .badge{
+    font-size:.78rem; padding:4px 9px; border-radius:7px; background:var(--teal-soft); color:var(--teal);
+    display:inline-flex; align-items:center; gap:4px;
+  }
+  .badge.warn{background:var(--warn-soft); color:var(--warn);}
+  .addr{font-family:"IBM Plex Mono",monospace; font-size:.82rem; color:var(--ink-muted); line-height:1.5; margin-bottom:12px;}
+  .actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn{
+    font-family:"Work Sans",sans-serif; font-size:.85rem; font-weight:600;
+    padding:8px 13px; border-radius:9px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--ink); text-decoration:none; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn.primary{background:var(--accent); color:#241a02; border-color:var(--accent);}
+  .btn.copied{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .btn.ghost{background:transparent; color:var(--ink-muted); border-style:dashed; margin-left:auto;}
+  .btn.ghost:hover{color:var(--new); border-color:var(--new);}
+
+  .hidden-note{
+    font-size:.8rem; color:var(--ink-muted); margin:-4px 0 16px;
+  }
+  .link-btn{
+    background:none; border:none; padding:0; margin:0; color:var(--teal);
+    font:inherit; font-weight:600; text-decoration:underline; cursor:pointer;
+  }
+
+  .prompt-box{
+    display:none; margin-top:12px; padding:10px 12px; background:var(--surface-2);
+    border:1px dashed var(--border); border-radius:10px; font-size:.82rem; color:var(--ink-muted);
+    font-family:"IBM Plex Mono",monospace; line-height:1.5; white-space:pre-wrap;
+  }
+  .prompt-box.open{display:block;}
+  .prompt-box::before{
+    content:"Prompt CV (Claude Design)"; display:block; font-family:"Work Sans",sans-serif;
+    font-weight:600; text-transform:uppercase; letter-spacing:.04em; font-size:.68rem;
+    color:var(--teal); margin-bottom:6px;
+  }
+  .prompt-box.lettre-box::before{ content:"Lettre de motivation (prête à coller)"; color:var(--accent-ink); }
+  .prompt-box.lettre-prompt-box::before{ content:"Prompt IA — pour une lettre sur-mesure"; color:var(--accent-ink); }
+
+  .doc-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .doc-row .doc-label{
+    font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--ink-muted); min-width:40px;
+  }
+
+  .dismiss-x{
+    align-self:flex-end; background:none; border:none; padding:0; margin-top:2px;
+    color:var(--ink-muted); font-size:.72rem; text-decoration:underline; cursor:pointer;
+    font-family:"Work Sans",sans-serif;
+  }
+  .dismiss-x:hover{ color:var(--new); }
+
+  .applied-badge{
+    font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.03em;
+    background:var(--teal-soft); color:var(--teal); padding:3px 8px; border-radius:6px; white-space:nowrap;
+  }
+
+  .actions-main{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .btn.applied-toggle.applied{ background:#2f8f4e; color:#fff; border-color:#2f8f4e; }
+  .btn.applied-toggle{ background:#e7f4ec; color:#2f8f4e; border-color:#bfe3cc; font-weight:700; }
+  :root[data-theme="dark"] .btn.applied-toggle,
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .btn.applied-toggle{ background:#173322; color:#7ee2a4; border-color:#255c3a; } }
+
+  .suivi-box{
+    margin-top:12px; padding:10px 12px; background:var(--teal-soft); border:1px solid var(--border);
+    border-radius:10px;
+  }
+  .suivi-title{ font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--teal); margin-bottom:8px; }
+  .suivi-field{ display:block; font-size:.78rem; color:var(--ink-muted); margin-bottom:8px; }
+  .suivi-field:last-child{ margin-bottom:0; }
+  .suivi-field input, .suivi-field textarea{
+    display:block; width:100%; margin-top:4px; font-family:"Work Sans",sans-serif; font-size:.85rem;
+    color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:7px 9px; box-sizing:border-box;
+  }
+  .suivi-field textarea{ min-height:52px; resize:vertical; }
+
+  .hist-toggle-wrap{ margin-bottom:18px; }
+  .hist-toggle-btn{
+    font-family:"Work Sans",sans-serif; font-size:.85rem; font-weight:600;
+    padding:9px 14px; border-radius:10px; border:1px solid var(--border);
+    background:var(--surface); color:var(--ink); cursor:pointer; box-shadow:var(--shadow);
+  }
+  .hist-toggle-btn.open{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+
+  .historique-panel{
+    margin:-4px 0 18px; padding:14px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:12px;
+  }
+  .hist-row{
+    display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--surface-2);
+    border-radius:10px; border:1px solid var(--border);
+  }
+  .hist-entreprise{ font-weight:700; }
+  .hist-poste{ color:var(--ink-muted); font-size:.88rem; }
+  .hist-date{ font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--teal); margin-top:2px; }
+  .hist-fields{ display:flex; flex-direction:column; gap:8px; }
+  .hist-fields label{ font-size:.78rem; color:var(--ink-muted); }
+  .hist-fields input, .hist-fields textarea{
+    display:block; width:100%; margin-top:4px; font-family:"Work Sans",sans-serif; font-size:.85rem;
+    color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:7px 9px; box-sizing:border-box;
+  }
+  .hist-fields textarea{ min-height:48px; resize:vertical; }
+  .hist-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  footer{margin-top:32px; font-size:.78rem; color:var(--ink-muted); text-align:center;}
+  .empty{color:var(--ink-muted); font-style:italic; padding:20px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Radar quotidien · 8h</span>
+    <h1>Radar Emploi Mâcon</h1>
+    <p class="sub">Vente &amp; commerce à Mâcon, Charnay-lès-Mâcon et Prissé, accessibles à pied ou en bus urbain — mis à jour chaque matin.</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="stat-total">0</div><div class="l">OFFRES SUIVIES</div></div>
+    <div class="stat"><div class="n" id="stat-new">0</div><div class="l">NOUVELLES</div></div>
+    <div class="stat"><div class="n" id="stat-cdi">0</div><div class="l">EN CDI</div></div>
+  </div>
+
+  <div class="updated" id="last-run">Dernière recherche : en attente du premier run automatique</div>
+  <p class="hidden-note" id="hidden-note" hidden><span class="count">0</span> offre(s) masquée(s) sur cet appareil · <button class="link-btn" onclick="resetDismissed()">tout réafficher</button></p>
+
+  <div class="filters">
+    <button class="active" data-filter="all">Toutes</button>
+    <button data-filter="new">Nouvelles</button>
+    <button data-filter="macon">Mâcon</button>
+  </div>
+
+  <div class="hist-toggle-wrap">
+    <button class="hist-toggle-btn" id="hist-toggle" type="button">📋 Suivi des candidatures (<span id="hist-count">0</span>)</button>
+  </div>
+  <div class="historique-panel" id="historique-panel" hidden></div>
+
+  <div class="list" id="list"></div>
+
+  <footer>Sources : Hellowork &amp; Indeed · Critères : sans permis, sans coupe viande/poisson/charcuterie · Mis à jour automatiquement chaque jour à 8h.</footer>
+</div>
+
+<script>
+  // DATA — regénéré à chaque run automatique. "nouveau" = true tant que non vu par l'utilisateur.
+  const DATA = {
+    lastRun: "24 septembre 2026 à 06h16",
+    offres: [
+      {entreprise:"Défi RH (recrutement pour un client non communiqué, commerce de détail)", poste:"Vendeurs H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/81518923.html", contrat:"CDI", nouveau:false, datePublication:"21 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Défi RH (recrutement pour un client non communiqué, commerce de détail) — Vendeurs H/F, Mâcon, CDI. Thème du poste : vente et conseil client en commerce de détail généraliste, mise en rayon. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Cultura", poste:"Conseiller de Vente Papeterie Création Eveil H/F", ville:"Mâcon", acces:"Mâcon (89 Route de Lyon) — bus urbain Tréma", adresse:"89 Route de Lyon, 71000 Mâcon", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82971133.html", contrat:"CDD", nouveau:false, datePublication:"3 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Cultura — Conseiller de Vente Papeterie Création Eveil H/F, Mâcon, CDD. Thème du poste : vente et conseil client en papeterie et loisirs créatifs. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Cultura", poste:"Conseiller de Vente Service H/F", ville:"Mâcon", acces:"Mâcon (89 Route de Lyon) — bus urbain Tréma", adresse:"89 Route de Lyon, 71000 Mâcon", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82971158.html", contrat:"CDD", nouveau:false, datePublication:"3 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Cultura — Conseiller de Vente Service H/F, Mâcon, CDD. Thème du poste : vente et conseil client en distribution culturelle et créative (accueil, caisse, billetterie). Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Employeur non communiqué (offre relayée par France Travail)", poste:"Conseiller de Vente en Tissus et Mercerie H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82525463.html", contrat:"CDI", nouveau:false, datePublication:"23 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Employeur non communiqué (offre relayée par France Travail) — Conseiller de Vente en Tissus et Mercerie H/F, Mâcon, CDI. Thème du poste : vente et conseil client en tissus et mercerie, textile spécialisé. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Poltronesofà", poste:"Vendeur H/F - 24h", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://fr.indeed.com/viewjob?jk=603a13836dcbf3c3", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Poltronesofà — Vendeur H/F - 24h, Mâcon, CDI (temps partiel, 24h/semaine). Thème du poste : vente et conseil client en ameublement haut de gamme (canapés, fauteuils). Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Intersport", poste:"Vendeur / Technicien Cycle H/F", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://fr.indeed.com/viewjob?jk=7be2196bc90c9c02", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Intersport — Vendeur / Technicien Cycle H/F, Crêches-sur-Saône, CDI. Thème du poste : vente et conseil technique en articles de sport, spécialisation cycles et randonnée. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Micromania Zing", poste:"Vendeur / Vendeuse H/F", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"CCAL Carrefour, ZI Les Bouchardes, RN6, 71680 Crêches-sur-Saône", tel:"", lien:"https://fr.indeed.com/viewjob?jk=8e0624d817b42846", contrat:"CDD", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Micromania Zing — Vendeur / Vendeuse H/F, Crêches-sur-Saône, CDD (2 mois, temps partiel). Thème du poste : vente et conseil client en jeux vidéo et culture pop. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Claire's", poste:"Assistant Magasin H/F (Vendeur·se)", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://fr.indeed.com/viewjob?jk=5e0302e214d9e999", contrat:"CDD", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Claire's — Assistant Magasin H/F (Vendeur·se), Crêches-sur-Saône, CDD (temps partiel). Thème du poste : vente et conseil client en bijoux/accessoires mode, univers ado. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Sud Express", poste:"Conseiller de Vente H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"33 rue Carnot, 71000 Mâcon", tel:"", lien:"https://fr.indeed.com/viewjob?jk=0e8184356f21e222", contrat:"CDD", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Sud Express — Conseiller de Vente H/F, Mâcon, CDD (35h/semaine). Thème du poste : vente et conseil client en prêt-à-porter féminin. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Défi RH (recrutement pour commerce déco/ameublement)", poste:"Conseiller de Vente H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82542600.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Défi RH (recrutement pour un magasin de décoration/ameublement) — Conseiller de Vente H/F, Mâcon, CDI. Thème du poste : vente et conseil client en décoration/ameublement, accueil, fidélisation, encaissement et réassort. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Carrefour", poste:"Employé Commercial Caisse Idéal Étudiant H/F", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83175316.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Carrefour — Employé Commercial Caisse Idéal Étudiant H/F, Crêches-sur-Saône, CDI (temps partiel, compatible études). Thème du poste : tenue de caisse et relation client en grande distribution. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"E.Leclerc", poste:"Hôte de Caisse H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83404223.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : E.Leclerc — Hôte de Caisse H/F, Mâcon, CDI (temps partiel). Thème du poste : tenue de caisse et accueil client en hypermarché. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Globe Groupe", poste:"Ambassadrice - Ambassadeur Beauté en Parfumerie H/F", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83301372.html", contrat:"CDD", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Globe Groupe — Ambassadrice - Ambassadeur Beauté en Parfumerie H/F, Crêches-sur-Saône, CDD (du 21 novembre au 24 décembre 2026, période de Noël). Thème du poste : vente et conseil en parfumerie/beauté, animation de vente en boutique. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"SFR", poste:"Conseiller Commercial H/F — SFR Mâcon (CDD 1 mois)", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://recrutement.sfr.com/offer/view/194024", contrat:"CDD", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : SFR — Conseiller Commercial H/F, boutique SFR Mâcon, CDD (1 mois). Thème du poste : vente et conseil client en téléphonie/télécom, accueil et développement des ventes en boutique. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Decathlon", poste:"Vendeur Vendeuse Sport Collectif - Sport de Raquette - Temps Partiel H/F", ville:"Mâcon", acces:"Mâcon (Rue des Grandes Teppes) — bus urbain Tréma", adresse:"Rue des Grandes Teppes, 71000 Mâcon", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/81344360.html", contrat:"CDI", nouveau:false, datePublication:"15 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Decathlon — Vendeur Vendeuse Sport Collectif - Sport de Raquette - Temps Partiel H/F, Mâcon, CDI. Thème du poste : vente d'articles de sport, conseil client sport collectif et raquette. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Decathlon", poste:"Vendeur·se CDD 35H Septembre H/F", ville:"Mâcon", acces:"Mâcon (Rue des Grandes Teppes) — bus urbain Tréma", adresse:"Rue des Grandes Teppes, 71000 Mâcon", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/81344420.html", contrat:"CDD", nouveau:false, datePublication:"15 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Decathlon — Vendeur·se CDD 35H Septembre H/F, Mâcon, CDD. Thème du poste : vente d'articles de sport, conseil et service client en magasin de sport. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Groupe Sedadi", poste:"Vendeur en Téléphonie H/F", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/81579307.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Groupe Sedadi — Vendeur en Téléphonie H/F, Crêches-sur-Saône, CDI. Thème du poste : vente de téléphonie et accessoires high-tech, conseil client. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Esallia", poste:"Vendeur Produits Engagés H/F — Job Étudiant, CDI 7-14h/semaine", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/78374977.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Esallia — Vendeur Produits Engagés H/F (Job Étudiant, CDI 7-14h/semaine), Mâcon, CDI. Thème du poste : vente de produits engagés / commerce équitable, conseil et relation client en boutique. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"E.Leclerc", poste:"Employé Commercial H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83404251.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : E.Leclerc — Employé Commercial H/F, Mâcon, CDI. Thème du poste : grande distribution, mise en rayon et conseil client en hypermarché. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Aldi", poste:"Employé Commercial H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83413983.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Aldi — Employé Commercial H/F, Mâcon, CDI. Thème du poste : grande distribution discount, mise en rayon, caisse et conseil client. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Carrefour", poste:"Employé Commercial Produits Frais H/F", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83010624.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Carrefour — Employé Commercial Produits Frais H/F, Crêches-sur-Saône, CDI. Thème du poste : grande distribution, mise en rayon produits frais (hors coupe boucherie/poissonnerie). Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Lidl", poste:"Equipier Polyvalent Etudiant H/F", ville:"Sancé", acces:"Sancé (agglo Mâcon) — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82745688.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Lidl — Equipier Polyvalent Etudiant H/F, Sancé, CDI. Thème du poste : grande distribution discount, mise en rayon, caisse et conseil client. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Intermarché (Groupement Mousquetaires)", poste:"Employé Commercial H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/71678763.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Intermarché (Groupement Mousquetaires) — Employé Commercial H/F, Mâcon, CDI. Thème du poste : grande distribution, mise en rayon et conseil client en supermarché. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Auchan Retail France", poste:"Equipier Commerce Hyper H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82489097.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Auchan Retail France — Equipier Commerce Hyper H/F, Mâcon, CDI. Thème du poste : grande distribution, mise en rayon polyvalente en hypermarché. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Aldi", poste:"Employé Principal H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83413937.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Aldi — Employé Principal H/F, Mâcon, CDI. Thème du poste : grande distribution discount, encadrement d'équipe, mise en rayon et caisse. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Lidl", poste:"Equipier Polyvalent 35H H/F", ville:"Sancé", acces:"Sancé (agglo Mâcon) — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82791901.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Lidl — Equipier Polyvalent 35H H/F, Sancé, CDI. Thème du poste : grande distribution discount, mise en rayon, caisse et conseil client, temps plein. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Leroy Merlin", poste:"Vendeur en Magasin H/F — rayon Menuiserie", ville:"Mâcon", acces:"Mâcon (RN 6) — bus urbain Tréma", adresse:"RN 6, 71000 Mâcon", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/81359342.html", contrat:"CDI", nouveau:false, datePublication:"16 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Leroy Merlin — Vendeur en Magasin H/F — rayon Menuiserie, Mâcon, CDI. Thème du poste : bricolage / habitat, univers menuiserie. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Maisons du Monde", poste:"Conseiller de Vente H/F", ville:"Mâcon", acces:"Mâcon (91 Route de Lyon) — bus urbain Tréma", adresse:"91 Route de Lyon, 71000 Mâcon", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/82358645.html", contrat:"CDI", nouveau:false, datePublication:"17 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Maisons du Monde — Conseiller de Vente H/F, Mâcon, CDI. Thème du poste : décoration et mobilier maison. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Espace Gold Change", poste:"Vendeur en Boutique — Rachat d'Or H/F", ville:"Mâcon", acces:"Mâcon (40/44 Rue Dombey) — bus urbain Tréma", adresse:"40/44 Rue Dombey, 71000 Mâcon", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/83094745.html", contrat:"CDI", nouveau:false, datePublication:"7 septembre 2026",
+        prompt:"Adapte mon CV joint pour cette offre : Espace Gold Change — Vendeur en Boutique — Rachat d'Or H/F, Mâcon, CDI. Thème du poste : bijouterie, rachat d'or et métaux précieux. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Norauto", poste:"Vendeur H/F", ville:"Crêches-sur-Saône", acces:"⚠️ Ligne périurbaine P4 (horaires limités) — à vérifier", adresse:"Centre Commercial Carrefour, Les Bouchardes, 71680 Crêches-sur-Saône", tel:"03 85 23 84 46", lien:"https://www.hellowork.com/fr-fr/emplois/83321351.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Norauto — Vendeur H/F, Crêches-sur-Saône, CDI. Thème du poste : pièces auto, pneus et accessoires véhicule. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."},
+      {entreprise:"Denier Florence", poste:"Vendeur - Vendeuse en Bureau de Tabac H/F", ville:"Mâcon", acces:"Mâcon — bus urbain Tréma", adresse:"Non précisée — à vérifier sur l'annonce", tel:"", lien:"https://www.hellowork.com/fr-fr/emplois/81331979.html", contrat:"CDI", nouveau:false, datePublication:"",
+        prompt:"Adapte mon CV joint pour cette offre : Denier Florence — Vendeur - Vendeuse en Bureau de Tabac H/F, Mâcon, CDI. Thème du poste : presse, tabac, jeux — aucune manipulation de viande/poisson. Mets en avant mon stage en grande distribution chez BI1 (contact client, mise en rayon) et adapte l'accroche/profil pour matcher l'univers du poste. Garde toutes mes infos réelles, n'invente rien. CV en une page, sobre et lisible par les outils de tri automatique (texte réel, pas d'infos essentielles uniquement en image)."}
+    ]
+  };
+
+  function esc(s){ return (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // Génère une lettre de motivation COMPLÈTE, prête à coller directement
+  // dans un champ comme celui d'Indeed ("Rédigez votre lettre de
+  // motivation…") — pas un prompt à donner à une IA. S'applique
+  // automatiquement à toute offre (existante ou ajoutée par un prochain run
+  // automatique) puisqu'elle est générée à partir des champs de l'offre,
+  // sans rien retoucher ici. Volontairement positif et sélectif : on ne
+  // parle que de ce qui met Jules en avant pour une candidature
+  // vente/commerce. Certains faits réels déjà connus (micro-entreprise
+  // Lumen Valet, absence de permis, CAP non validé, pas d'études après le
+  // CAP) sont exclus à sa demande car ils n'apportent rien pour ce type de
+  // poste et peuvent freiner un recruteur — ce n'est pas un mensonge, juste
+  // ce qu'on choisit de mettre en avant.
+  function getTheme(o){
+    const m = (o.prompt || "").match(/Thème du poste\s*:\s*([^.]+)\./i);
+    return m ? m[1].trim() : "";
+  }
+
+  function buildLettreText(o){
+    const theme = getTheme(o);
+    const contratTxt = o.contrat === "CDD" ? "CDD" : "CDI";
+    const themePhrase = theme ? (", dans l'univers " + theme.toLowerCase()) : "";
+    return "Madame, Monsieur,\n\n" +
+      "Je vous adresse ma candidature pour le poste de " + o.poste + " au sein de " + o.entreprise + ", à " + o.ville + ". Votre offre correspond exactement à ce que je recherche : un poste de vente/commerce en " + contratTxt + ", où je peux être au contact direct des clients" + themePhrase + ".\n\n" +
+      "Lors de mon stage chez BI1, dans la grande distribution, j'ai développé un vrai sens du contact client ainsi qu'une bonne rigueur dans la mise en rayon et la présentation des produits. J'ai également occupé d'autres postes qui m'ont appris à m'adapter rapidement à différents environnements de travail, notamment chez SD Étiquettes à Mâcon, chez Massilly et à la Cave de Prissé.\n\n" +
+      "Je suis quelqu'un de sérieux, ponctuel et à l'aise avec le public, motivé à l'idée de rejoindre votre équipe et disponible rapidement. Je serais ravi de pouvoir échanger avec vous lors d'un entretien pour vous présenter plus en détail ma motivation.\n\n" +
+      "Je vous remercie pour l'attention portée à ma candidature et reste à votre disposition.\n\n" +
+      "Cordialement,\nJules Valet";
+  }
+
+  // Variante "prompt IA" : au lieu du texte final ci-dessus, un prompt à
+  // donner à Claude (ou une autre IA) pour qu'elle rédige/peaufine une
+  // lettre plus personnalisée. Mêmes règles que le texte prêt : uniquement
+  // ce qui met Jules en avant, rien de négatif (pas de permis, pas de
+  // micro-entreprise, pas de diplôme non validé, pas d'études après le CAP).
+  const JULES_INFO = "Jules Valet, 19 ans, basé à Prissé / Charnay-lès-Mâcon, à proximité immédiate de Mâcon. Expérience de terrain en grande distribution : stage chez BI1, avec un vrai contact client et de la mise en rayon — l'expérience la plus proche du poste, à mettre en avant en priorité. Autres expériences professionnelles : SD Étiquettes à Mâcon (stage puis mission en imprimerie), Massilly (colorimétrie), Cave de Prissé (missions en cave viticole) — qui montrent qu'il sait s'adapter à différents environnements de travail et être ponctuel et fiable. Bon relationnel, à l'aise avec les clients, motivé et disponible rapidement pour un poste en vente/commerce en CDI (CDD accepté si le poste est intéressant).";
+
+  function buildLettrePrompt(o){
+    const theme = getTheme(o);
+    return "Rédige une lettre de motivation professionnelle et humaine pour cette offre : " + o.entreprise + " — " + o.poste + ", " + o.ville + ", " + o.contrat + (theme ? (". Univers du poste : " + theme + ".") : ".") + " Voici mes informations réelles à utiliser telles quelles, sans rien inventer d'autre : " + JULES_INFO + " Structure attendue : une accroche personnalisée pour cette enseigne et ce poste, une présentation rapide de mon profil, la mise en avant de mon stage en grande distribution chez BI1 (contact client, mise en rayon) comme expérience la plus transférable, ma motivation et ma disponibilité, puis une formule de politesse. Reste uniquement sur ce qui me met en valeur et donne une image positive et humaine : ne mentionne aucune limite, manque ou contrainte (diplôme, permis, activité annexe ou autre) qui ne figure pas explicitement ci-dessus. Ton naturel et sincère, pas de formules toutes faites ni de tournures robotiques, une page maximum (250 à 300 mots).";
+  }
+
+  // Suivi des candidatures — "Marquer postulé" sur une offre l'enregistre
+  // ici (localStorage, propre à cet appareil, comme "Pas intéressé"), avec
+  // la date et des champs téléphone/notes éditables pour pouvoir recontacter
+  // l'employeur plus tard. Visible à la fois sur la carte de l'offre et dans
+  // le panneau "Suivi des candidatures".
+  const APPLIED_KEY = "radarEmploiMacon.applied.v1";
+  function loadApplied(){
+    try{
+      const raw = localStorage.getItem(APPLIED_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveApplied(){
+    try{ localStorage.setItem(APPLIED_KEY, JSON.stringify(applied)); }catch(e){}
+  }
+  let applied = loadApplied();
+
+  function todayFR(){
+    const mois = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+    const d = new Date();
+    return d.getDate() + " " + mois[d.getMonth()] + " " + d.getFullYear();
+  }
+
+  function toggleApplied(o){
+    if(applied[o.lien]){
+      delete applied[o.lien];
+    }else{
+      applied[o.lien] = { date: todayFR(), tel: o.tel || "", notes: "", entreprise:o.entreprise, poste:o.poste, ville:o.ville, adresse:o.adresse, lien:o.lien };
+    }
+    saveApplied();
+    render();
+    renderHistorique();
+  }
+
+  function updateAppliedField(lien, field, value){
+    if(!applied[lien]) return;
+    applied[lien][field] = value;
+    saveApplied();
+  }
+
+  // "Pas intéressé" — masque une offre côté navigateur uniquement (localStorage).
+  // N'écrit jamais dans DATA, ne modifie rien pour les prochains runs de recherche :
+  // c'est un simple filtre d'affichage propre à cet appareil.
+  const DISMISS_KEY = "radarEmploiMacon.dismissed.v1";
+  function loadDismissed(){
+    try{
+      const raw = localStorage.getItem(DISMISS_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    }catch(e){ return new Set(); }
+  }
+  function saveDismissed(){
+    try{ localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissed])); }catch(e){}
+  }
+  let dismissed = loadDismissed();
+
+  function dismissOffer(lien){
+    dismissed.add(lien);
+    saveDismissed();
+    render();
+  }
+
+  function resetDismissed(){
+    dismissed = new Set();
+    saveDismissed();
+    render();
+  }
+
+  let filter = "all";
+
+  function render(){
+    const list = document.getElementById('list');
+    const visible = DATA.offres.filter(o => !dismissed.has(o.lien));
+    const items = visible.filter(o => {
+      if(filter==="new") return o.nouveau;
+      if(filter==="macon") return /mâcon|macon|charnay|prissé|prisse/i.test(o.ville);
+      return true;
+    });
+    document.getElementById('stat-total').textContent = visible.length;
+    document.getElementById('stat-new').textContent = visible.filter(o=>o.nouveau).length;
+    document.getElementById('stat-cdi').textContent = visible.filter(o=>o.contrat==="CDI").length;
+    document.getElementById('last-run').textContent = DATA.lastRun
+      ? "Dernière recherche : " + DATA.lastRun
+      : "Dernière recherche : en attente du premier run automatique";
+
+    const hiddenNote = document.getElementById('hidden-note');
+    hiddenNote.hidden = dismissed.size === 0;
+    hiddenNote.querySelector('.count').textContent = dismissed.size;
+
+    if(items.length===0){ list.innerHTML = '<p class="empty">Aucune offre dans ce filtre pour l\'instant.</p>'; return; }
+
+    // Chaque carte porte son lien en data-attribute ; les boutons portent une
+    // data-action. Aucune donnée dynamique (lien, prompt) n'est plus injectée
+    // dans un attribut onclick="" : quand un lien ou un prompt contient un
+    // guillemet double ou une apostrophe, ça cassait l'attribut HTML et le
+    // clic ne faisait plus rien (c'était le bug du bouton "Pas intéressé"
+    // qui ne masquait pas réellement l'offre). La délégation d'événements
+    // plus bas lit ces data-attributes, donc corrige aussi silencieusement
+    // le bouton "Copier le prompt".
+    list.innerHTML = items.map((o,i) => {
+      const app = applied[o.lien];
+      return `
+      <div class="card ${o.nouveau?'is-new':''}" data-lien="${esc(o.lien)}">
+        <div class="card-top">
+          <div>
+            <div class="entreprise">${esc(o.entreprise)}</div>
+            <div class="poste">${esc(o.poste)}</div>
+          </div>
+          <div class="card-top-right">
+            ${o.datePublication ? `<span class="pub-date">Publiée ${esc(o.datePublication)}</span>` : ''}
+            ${o.nouveau ? '<span class="new-badge">Nouveau</span>' : ''}
+            ${app ? `<span class="applied-badge">✓ Postulé le ${esc(app.date)}</span>` : ''}
+            <button class="dismiss-x" type="button" data-action="dismiss">Pas intéressé</button>
+          </div>
+        </div>
+        <div class="badges">
+          <span class="badge">${esc(o.ville)}</span>
+          <span class="badge ${/⚠️/.test(o.acces)?'warn':''}">${esc(o.acces)}</span>
+          ${o.contrat ? `<span class="badge">${esc(o.contrat)}</span>` : ''}
+        </div>
+        <div class="addr">${esc(o.adresse)}${o.tel ? ' · ' + esc(o.tel) : ''}</div>
+
+        <div class="doc-row">
+          <span class="doc-label">CV</span>
+          <button class="btn" type="button" data-action="toggle-prompt">Voir le prompt</button>
+          <button class="btn" type="button" data-action="copy-prompt">Copier</button>
+        </div>
+        <div class="prompt-box cv-box">${esc(o.prompt)}</div>
+
+        <div class="doc-row">
+          <span class="doc-label">Lettre</span>
+          <button class="btn" type="button" data-action="toggle-lettre">Voir la lettre</button>
+          <button class="btn" type="button" data-action="copy-lettre">Copier le texte</button>
+        </div>
+        <div class="prompt-box lettre-box">${esc(buildLettreText(o))}</div>
+
+        <div class="doc-row">
+          <span class="doc-label">Prompt IA</span>
+          <button class="btn" type="button" data-action="toggle-lettre-prompt">Voir le prompt</button>
+          <button class="btn" type="button" data-action="copy-lettre-prompt">Copier</button>
+        </div>
+        <div class="prompt-box lettre-prompt-box">${esc(buildLettrePrompt(o))}</div>
+
+        ${app ? `
+        <div class="suivi-box">
+          <div class="suivi-title">Suivi de candidature</div>
+          <label class="suivi-field">Téléphone à recontacter
+            <input type="text" class="suivi-tel" data-field="tel" value="${esc(app.tel)}" placeholder="Numéro">
+          </label>
+          <label class="suivi-field">Notes
+            <textarea class="suivi-notes" data-field="notes" placeholder="Ex : parlé au responsable, rappeler jeudi...">${esc(app.notes)}</textarea>
+          </label>
+        </div>` : ''}
+
+        <div class="actions-main">
+          <a class="btn primary" href="${esc(o.lien)}" target="_blank" rel="noopener">Voir l'offre ↗</a>
+          <button class="btn applied-toggle ${app ? 'applied' : ''}" type="button" data-action="toggle-applied">${app ? '✓ Postulé' : 'Postulé'}</button>
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+
+  function renderHistorique(){
+    const countEl = document.getElementById('hist-count');
+    const panel = document.getElementById('historique-panel');
+    const entries = Object.keys(applied).map(lien => Object.assign({lien}, applied[lien]));
+    if(countEl) countEl.textContent = entries.length;
+    if(!panel) return;
+    if(entries.length === 0){
+      panel.innerHTML = '<p class="empty">Aucune candidature enregistrée pour l\'instant. Clique sur "Postulé" sur une offre pour l\'ajouter ici, avec un numéro et des notes pour la recontacter.</p>';
+      return;
+    }
+    panel.innerHTML = entries.map(e => `
+      <div class="hist-row" data-lien="${esc(e.lien)}">
+        <div>
+          <div class="hist-entreprise">${esc(e.entreprise)}</div>
+          <div class="hist-poste">${esc(e.poste)} · ${esc(e.ville)}</div>
+          <div class="hist-date">Candidature envoyée le ${esc(e.date)}</div>
+        </div>
+        <div class="hist-fields">
+          <label>Téléphone à recontacter
+            <input type="text" class="hist-tel" data-field="tel" value="${esc(e.tel)}" placeholder="Numéro">
+          </label>
+          <label>Notes
+            <textarea class="hist-notes" data-field="notes" placeholder="Notes de suivi...">${esc(e.notes)}</textarea>
+          </label>
+        </div>
+        <div class="hist-actions">
+          <a class="btn" href="${esc(e.lien)}" target="_blank" rel="noopener">Voir l'offre ↗</a>
+          <button class="btn ghost" type="button" data-action="hist-remove">Retirer de l'historique</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function copyPromptText(btn, text){
+    const done = () => {
+      const original = btn.textContent;
+      btn.textContent = "Copié ✓";
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+    };
+    // En cas d'échec (pas d'API clipboard dispo), on ouvre le bon encart parmi
+    // les trois (CV / lettre prête / prompt IA) pour que le texte à copier à
+    // la main soit bien celui qu'on visait.
+    const BOX_SELECTOR_BY_ACTION = {
+      'copy-prompt': '.prompt-box.cv-box',
+      'copy-lettre': '.prompt-box.lettre-box',
+      'copy-lettre-prompt': '.prompt-box.lettre-prompt-box'
+    };
+    const boxSelector = BOX_SELECTOR_BY_ACTION[btn.dataset.action] || '.prompt-box.cv-box';
+    const fallback = () => {
+      const box = btn.closest('.card').querySelector(boxSelector);
+      if(box){ box.classList.add('open'); box.focus?.(); }
+    };
+    try{
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
+    }catch(e){
+      fallback();
+    }
+  }
+
+  // Délégation d'événements : un seul listener posé une fois sur #list,
+  // qui reste en place même quand render() recrée tout le contenu de la
+  // liste (innerHTML). C'est ce qui fait que le clic marche de façon fiable
+  // quelle que soit l'offre, sans dépendre du contenu du lien ou du prompt.
+  document.getElementById('list').addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn, .dismiss-x');
+    if(!btn) return;
+    const card = btn.closest('.card');
+    if(!card) return;
+    const lien = card.dataset.lien;
+    const offer = DATA.offres.find(o => o.lien === lien);
+    if(!offer) return;
+
+    if(btn.dataset.action === 'toggle-prompt'){
+      card.querySelector('.prompt-box.cv-box').classList.toggle('open');
+    } else if(btn.dataset.action === 'copy-prompt'){
+      copyPromptText(btn, offer.prompt);
+    } else if(btn.dataset.action === 'toggle-lettre'){
+      card.querySelector('.prompt-box.lettre-box').classList.toggle('open');
+    } else if(btn.dataset.action === 'copy-lettre'){
+      copyPromptText(btn, buildLettreText(offer));
+    } else if(btn.dataset.action === 'toggle-lettre-prompt'){
+      card.querySelector('.prompt-box.lettre-prompt-box').classList.toggle('open');
+    } else if(btn.dataset.action === 'copy-lettre-prompt'){
+      copyPromptText(btn, buildLettrePrompt(offer));
+    } else if(btn.dataset.action === 'dismiss'){
+      dismissOffer(offer.lien);
+    } else if(btn.dataset.action === 'toggle-applied'){
+      toggleApplied(offer);
+    }
+  });
+
+  // Champs "téléphone"/"notes" du bloc suivi sur la carte : sauvegarde à la
+  // volée sans relancer render(), pour ne pas faire perdre le focus/curseur
+  // pendant la saisie.
+  document.getElementById('list').addEventListener('input', (e) => {
+    const field = e.target.closest('.suivi-tel, .suivi-notes');
+    if(!field) return;
+    const card = field.closest('.card');
+    if(!card) return;
+    updateAppliedField(card.dataset.lien, field.dataset.field, field.value);
+  });
+
+  document.getElementById('hist-toggle').addEventListener('click', () => {
+    const panel = document.getElementById('historique-panel');
+    const btn = document.getElementById('hist-toggle');
+    const willOpen = panel.hidden;
+    panel.hidden = !willOpen;
+    btn.classList.toggle('open', willOpen);
+    if(willOpen) renderHistorique();
+  });
+
+  document.getElementById('historique-panel').addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn');
+    if(!btn || btn.dataset.action !== 'hist-remove') return;
+    const row = btn.closest('.hist-row');
+    if(!row) return;
+    delete applied[row.dataset.lien];
+    saveApplied();
+    render();
+    renderHistorique();
+  });
+
+  document.getElementById('historique-panel').addEventListener('input', (e) => {
+    const field = e.target.closest('.hist-tel, .hist-notes');
+    if(!field) return;
+    const row = field.closest('.hist-row');
+    if(!row) return;
+    updateAppliedField(row.dataset.lien, field.dataset.field, field.value);
+  });
+
+  document.querySelectorAll('.filters button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.filters button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      filter = b.dataset.filter;
+      render();
+    });
+  });
+
+  render();
+  renderHistorique();
+</script>
+</body>
+</html>
